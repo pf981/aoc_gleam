@@ -1,25 +1,9 @@
 # aoc_gleam
 
-[![Package Version](https://img.shields.io/hexpm/v/aoc_gleam)](https://hex.pm/packages/aoc_gleam)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/aoc_gleam/)
+## Usage
+
+Uses [gladvent](https://hexdocs.pm/gladvent/)
 
 ```sh
-gleam add aoc_gleam
-```
-```gleam
-import aoc_gleam
-
-pub fn main() {
-  // TODO: An example of the project in use
-}
-```
-
-Further documentation can be found at <https://hexdocs.pm/aoc_gleam>.
-
-## Development
-
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
-gleam shell # Run an Erlang shell
+gleam run -m gladvent run 1 --year=2023 # Run 2023 day 1
 ```
