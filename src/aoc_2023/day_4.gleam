@@ -12,21 +12,21 @@ pub fn parse(input: String) -> Result(List(Int), Nil) {
 }
 
 pub fn pt_1(input: Result(List(Int), Nil)) -> Result(Int, Nil) {
-  input
-  |> result.map(list.map(_, fn(n) {
+  use wins <- result.map(input)
+
+  wins
+  |> list.map(fn(n) {
     case n {
       0 -> 0
       _ -> pow(2, n - 1)
     }
-  }))
-  |> result.map(int.sum)
+  })
+  |> int.sum
 }
 
 pub fn pt_2(input: Result(List(Int), Nil)) -> Result(Int, Nil) {
-  input
-  |> result.map(fn(wins) {
-    count_scratchcards(wins, list.map(wins, fn(_) { 1 }), 0)
-  })
+  use wins <- result.map(input)
+  count_scratchcards(wins, list.map(wins, fn(_) { 1 }), 0)
 }
 
 fn parse_numbers(s: String) -> Result(Set(Int), Nil) {
