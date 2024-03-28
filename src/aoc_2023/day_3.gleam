@@ -27,14 +27,9 @@ fn find_left(
   row: Int,
   col: Int,
 ) -> Result(Int, Nil) {
-  case dict.get(grid, #(row, col)) {
-    Ok(c) ->
-      case to_digit(c) {
-        Ok(_) -> result.or(find_left(grid, row, col - 1), Ok(col))
-        Error(Nil) -> Error(Nil)
-      }
-    Error(Nil) -> Error(Nil)
-  }
+  use c <- result.try(dict.get(grid, #(row, col)))
+  use _ <- result.try(to_digit(c))
+  result.or(find_left(grid, row, col - 1), Ok(col))
 }
 
 fn get_number(
@@ -45,14 +40,13 @@ fn get_number(
   use left <- result.map(find_left(grid, row, col))
   iterator.iterate(left, fn(col) { col + 1 })
   |> iterator.fold_until(0, fn(acc, new_col) {
-    let c = dict.get(grid, #(row, new_col))
-    case c {
+    case dict.get(grid, #(row, new_col)) {
       Ok(c) ->
         case to_digit(c) {
           Ok(num) -> list.Continue(10 * acc + num)
           _ -> list.Stop(acc)
         }
-      _ -> list.Stop(acc)
+      Error(Nil) -> list.Stop(acc)
     }
   })
 }
