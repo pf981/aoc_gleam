@@ -1,5 +1,7 @@
+import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/int
+import gleam/iterator
 import gleam/list
 import gleam/pair
 import gleam/result
@@ -26,32 +28,131 @@ fn to_digit(c: String) -> Result(Int, Nil) {
   }
 }
 
-// Note: No symbols on the edge
-fn extract_parts(grid: List(List(String))) -> Dict(Symbol, List(Int)) {
-  grid
-  |> list.window(3)
-  dict.new()
+fn find_left(
+  grid: Dict(#(Int, Int), String),
+  row: Int,
+  col: Int,
+) -> Result(Int, Nil) {
+  case dict.get(grid, #(row, col)) {
+    Ok(c) ->
+      case to_digit(c) {
+        Ok(_) -> result.or(find_left(grid, row, col - 1), Ok(col))
+        Error(Nil) -> Error(Nil)
+      }
+    Error(Nil) -> Error(Nil)
+  }
 }
 
-fn solve(input: String, f: fn(Symbol, List(Int)) -> Int) -> Int {
+fn get_number(
+  grid: Dict(#(Int, Int), String),
+  row: Int,
+  col: Int,
+) -> Result(Int, Nil) {
+  use left <- result.map(find_left(grid, row, col))
+  iterator.iterate(left, fn(col) { col + 1 })
+  |> iterator.fold_until(0, fn(acc, new_col) {
+    let c = dict.get(grid, #(row, new_col))
+    case c {
+      Ok(c) ->
+        case to_digit(c) {
+          Ok(num) -> list.Continue(10 * acc + num)
+          _ -> list.Stop(acc)
+        }
+      _ -> list.Stop(acc)
+    }
+  })
+}
+
+// fn get_number(
+//   grid: Dict(#(Int, Int), String),
+//   row: Int,
+//   col: Int,
+// ) -> Result(Int, Nil) {
+//   case find_left(grid, row, col) {
+//     Ok(left) ->
+//       iterator.iterate(left, fn(col) { col + 1 })
+//       |> iterator.fold_until(0, fn(acc, new_col) {
+//         let c = dict.get(grid, #(row, new_col))
+//         case c {
+//           Ok(c) ->
+//             case to_digit(c) {
+//               Ok(num) -> list.Continue(10 * acc + num)
+//               _ -> list.Stop(acc)
+//             }
+//           _ -> list.Stop(acc)
+//         }
+//       })
+//       |> Ok
+//     Error(Nil) -> Error(Nil)
+//   }
+// }
+
+fn get_neighbours(
+  grid: Dict(#(Int, Int), String),
+  row: Int,
+  col: Int,
+) -> List(Int) {
+  [
+    #(-1, -1),
+    #(-1, 0),
+    #(-1, 1),
+    #(0, -1),
+    #(0, 1),
+    #(1, -1),
+    #(1, -0),
+    #(1, 1),
+  ]
+  |> list.filter_map(fn(pos) {
+    let #(dr, dc) = pos
+    get_number(grid, row + dr, col + dc)
+  })
+  |> set.from_list
+  |> set.to_list
+}
+
+fn parse(input: String) -> Dict(#(Int, Int), String) {
   input
   |> string.split("\n")
-  |> list.map(string.to_graphemes)
-  |> extract_parts
-  |> dict.map_values(f)
+  |> list.index_map(fn(line, row) {
+    line
+    |> string.to_graphemes
+    |> list.index_map(fn(c, col) { #(#(row, col), c) })
+  })
+  |> list.flatten
+  |> dict.from_list
+}
+
+fn extract_parts(grid: Dict(#(Int, Int), String)) -> List(#(String, List(Int))) {
+  grid
+  |> dict.filter(fn(_key, value) { !string.contains("1234567890.", value) })
+  |> dict.map_values(fn(key, value) {
+    #(value, get_neighbours(grid, key.0, key.1))
+  })
   |> dict.values
+}
+
+fn solve(input: String, f: fn(#(String, List(Int))) -> Int) -> Int {
+  input
+  |> parse
+  // |> io.debug
+  |> extract_parts
+  // |> io.debug
+  |> list.map(f)
   |> int.sum
 }
 
 pub fn pt_1(input: String) {
-  solve(input, fn(_symbol, neighbors) { int.sum(neighbors) })
+  solve(input, fn(pair) { int.sum(pair.1) })
 }
 
 pub fn pt_2(input: String) {
-  solve(input, fn(symbol, neighbors) {
-    case symbol.c, neighbors {
-      "*", [a, b] -> a * b
-      _, _ -> 0
+  // todo
+  solve(input, fn(pair) {
+    case pair {
+      #("*", [a, b]) -> a * b
+      _ -> 0
     }
   })
 }
+
+import gleam/io
