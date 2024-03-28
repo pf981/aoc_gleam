@@ -1,16 +1,10 @@
-import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/iterator
 import gleam/list
-import gleam/pair
 import gleam/result
-import gleam/set.{type Set}
+import gleam/set
 import gleam/string
-
-type Symbol {
-  Symbol(c: String, row: Int, col: Int)
-}
 
 fn to_digit(c: String) -> Result(Int, Nil) {
   case c {
@@ -63,30 +57,6 @@ fn get_number(
   })
 }
 
-// fn get_number(
-//   grid: Dict(#(Int, Int), String),
-//   row: Int,
-//   col: Int,
-// ) -> Result(Int, Nil) {
-//   case find_left(grid, row, col) {
-//     Ok(left) ->
-//       iterator.iterate(left, fn(col) { col + 1 })
-//       |> iterator.fold_until(0, fn(acc, new_col) {
-//         let c = dict.get(grid, #(row, new_col))
-//         case c {
-//           Ok(c) ->
-//             case to_digit(c) {
-//               Ok(num) -> list.Continue(10 * acc + num)
-//               _ -> list.Stop(acc)
-//             }
-//           _ -> list.Stop(acc)
-//         }
-//       })
-//       |> Ok
-//     Error(Nil) -> Error(Nil)
-//   }
-// }
-
 fn get_neighbours(
   grid: Dict(#(Int, Int), String),
   row: Int,
@@ -134,9 +104,7 @@ fn extract_parts(grid: Dict(#(Int, Int), String)) -> List(#(String, List(Int))) 
 fn solve(input: String, f: fn(#(String, List(Int))) -> Int) -> Int {
   input
   |> parse
-  // |> io.debug
   |> extract_parts
-  // |> io.debug
   |> list.map(f)
   |> int.sum
 }
@@ -146,7 +114,6 @@ pub fn pt_1(input: String) {
 }
 
 pub fn pt_2(input: String) {
-  // todo
   solve(input, fn(pair) {
     case pair {
       #("*", [a, b]) -> a * b
@@ -154,5 +121,3 @@ pub fn pt_2(input: String) {
     }
   })
 }
-
-import gleam/io
