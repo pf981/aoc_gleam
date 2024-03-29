@@ -5,7 +5,7 @@ import gleam/result
 import gleam/string
 
 pub type Error {
-  ParseError(message: String)
+  ParseError
 }
 
 pub type Range {
@@ -20,18 +20,26 @@ pub type Almanac {
   Almanac(seeds: List(Int), maps: List(Map))
 }
 
-import gleam/io
+pub fn parse(input: String) -> Result(Almanac, Error) {
+  case string.split(input, "\n\n") {
+    [seed_line, ..maps_lines] -> {
+      let seed = parse_seed(seed_line)
+      let maps =
+        maps_lines
+        |> list.map(parse_map)
+        |> result.all
 
-pub fn parse(input: String) -> Almanac {
-  let #(seed_line, map_lines) =
-    input
-    |> string.split("\n\n")
-    |> pop("")
-
-  Almanac(parse_seed(seed_line), list.map(map_lines, parse_map))
+      case seed, maps {
+        Ok(seed), Ok(maps) -> Ok(Almanac(seed, maps))
+        Error(e), _ | _, Error(e) -> Error(e)
+      }
+    }
+    _ -> Error(ParseError)
+  }
 }
 
-pub fn pt_1(almanac: Almanac) -> Int {
+pub fn pt_1(almanac: Result(Almanac, Error)) -> Result(Int, Error) {
+  use almanac <- result.map(almanac)
   almanac.seeds
   |> list.map(fn(start) { Range(start, start, 0) })
   |> Map
@@ -39,7 +47,8 @@ pub fn pt_1(almanac: Almanac) -> Int {
   |> find_lowest
 }
 
-pub fn pt_2(almanac: Almanac) -> Int {
+pub fn pt_2(almanac: Result(Almanac, Error)) -> Result(Int, Error) {
+  use almanac <- result.map(almanac)
   almanac.seeds
   |> list.sized_chunk(2)
   |> list.map(fn(l) {
@@ -159,27 +168,26 @@ fn parse_numbers(line: String) -> List(Int) {
   |> list.filter_map(int.base_parse(_, 10))
 }
 
-fn parse_seed(line: String) -> List(Int) {
+fn parse_seed(line: String) -> Result(List(Int), Error) {
   line
-  |> string.split(": ")
-  |> pop("")
-  |> pair.second
-  |> pop("")
-  |> pair.first
-  |> parse_numbers
+  |> string.split_once(": ")
+  |> result.map(pair.second)
+  |> result.map(parse_numbers)
+  |> result.replace_error(ParseError)
 }
 
-fn parse_map(lines: String) -> Map {
+fn parse_map(lines: String) -> Result(Map, Error) {
   lines
   |> string.split("\n")
   |> pop("")
   |> pair.second
-  |> list.filter_map(fn(line) {
+  |> list.map(fn(line) {
     case parse_numbers(line) {
       [dest_start, start, length] ->
         Ok(Range(start, start + length - 1, dest_start - start))
-      _ -> Error(Nil)
+      _ -> Error(ParseError)
     }
   })
-  |> Map
+  |> result.all
+  |> result.map(Map)
 }
