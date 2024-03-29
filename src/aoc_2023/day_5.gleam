@@ -32,10 +32,15 @@ pub fn parse(input: String) -> Almanac {
 }
 
 pub fn pt_1(almanac: Almanac) -> Int {
-  almanac
-  |> io.debug
-  almanac.seeds
-  |> list.map(fn(start) { Range(start, start + 1, 0) })
+  // almanac
+  // |> io.debug
+  // almanac.seeds
+  // |> list.map(fn(start) { Range(start, start, 0) })
+  // |> Map
+  // |> list.prepend(almanac.maps, _)
+  // |> find_lowest
+  [55]
+  |> list.map(fn(start) { Range(start, start, 0) })
   |> Map
   |> list.prepend(almanac.maps, _)
   |> find_lowest
@@ -63,7 +68,13 @@ pub type Overlap {
 }
 
 pub fn overlap(a: Range, b: Range) -> Overlap {
-  case a.start < b.start, a.end < b.start, a.start > b.end, a.end > b.end {
+  let start1 = a.start + a.offset
+  let end1 = a.end + a.offset
+  let start2 = b.start
+  let end2 = b.end
+
+  case start1 < start2, end1 < start2, start1 > end2, end1 > end2 {
+    // case a.start < b.start, a.end < b.start, a.start > b.end, a.end > b.end {
     True, True, _, _ -> None
     _, _, True, True -> None
     True, False, _, False -> Right
@@ -111,6 +122,7 @@ fn reducer_impl(a: Map, b: Map, acc: Map) -> Map {
 }
 
 fn reducer(a: Map, b: Map) -> Map {
+  io.debug(#(a, b))
   reducer_impl(a, b, Map([]))
 }
 
@@ -159,7 +171,7 @@ fn parse_map(lines: String) -> Map {
   |> list.filter_map(fn(line) {
     case parse_numbers(line) {
       [dest_start, start, length] ->
-        Ok(Range(start, start + length, dest_start - start))
+        Ok(Range(start, start + length - 1, dest_start - start))
       _ -> Error(Nil)
     }
   })
