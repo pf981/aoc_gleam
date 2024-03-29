@@ -77,11 +77,10 @@ pub fn overlap(a: Range, b: Range) -> Overlap {
   case start1 < start2, end1 < start2, start1 > end2, end1 > end2 {
     True, True, _, _ -> None
     _, _, True, True -> None
-    True, False, _, False -> Right
-    False, False, False, True -> Left
+    True, _, _, False -> Right
+    False, _, _, True -> Left
     True, _, _, True -> Middle
-    False, False, False, False -> Full
-    _, _, _, _ -> panic
+    False, _, _, False -> Full
   }
 }
 
@@ -124,7 +123,7 @@ pub fn split_range(range: Range, b: Map) -> #(Range, List(Range)) {
   }
 }
 
-pub fn reducer_impl(a: Map, b: Map, acc: Map) -> Map {
+fn reducer_impl(a: Map, b: Map, acc: Map) -> Map {
   case a {
     Map([]) -> acc
     Map([first, ..rest]) -> {
@@ -138,8 +137,7 @@ pub fn reducer_impl(a: Map, b: Map, acc: Map) -> Map {
   }
 }
 
-pub fn reducer(a: Map, b: Map) -> Map {
-  // io.debug(#(a, b))
+fn reducer(a: Map, b: Map) -> Map {
   reducer_impl(a, b, Map([]))
 }
 
