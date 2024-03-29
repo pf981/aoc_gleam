@@ -5,7 +5,7 @@ import gleam/result
 import gleam/string
 
 pub type Error {
-  ParseError
+  ParseError(message: String)
 }
 
 pub type Range {
@@ -34,7 +34,7 @@ pub fn parse(input: String) -> Result(Almanac, Error) {
         Error(e), _ | _, Error(e) -> Error(e)
       }
     }
-    _ -> Error(ParseError)
+    _ -> Error(ParseError("Unable to split input into seed and maps"))
   }
 }
 
@@ -162,18 +162,21 @@ fn pop(l: List(a), default: a) -> #(a, List(a)) {
   }
 }
 
-fn parse_numbers(line: String) -> List(Int) {
+fn parse_numbers(line: String) -> Result(List(Int), Error) {
   line
   |> string.split(" ")
-  |> list.filter_map(int.base_parse(_, 10))
+  |> list.map(int.base_parse(_, 10))
+  |> result.all
+  |> result.replace_error(ParseError("Unable to parse seed numbers"))
 }
 
 fn parse_seed(line: String) -> Result(List(Int), Error) {
   line
   |> string.split_once(": ")
   |> result.map(pair.second)
+  |> result.replace_error(ParseError("Unable to split seed line"))
   |> result.map(parse_numbers)
-  |> result.replace_error(ParseError)
+  |> result.flatten
 }
 
 fn parse_map(lines: String) -> Result(Map, Error) {
