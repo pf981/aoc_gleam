@@ -4,6 +4,10 @@ import gleam/pair
 import gleam/result
 import gleam/string
 
+pub type Error {
+  ParseError(message: String)
+}
+
 pub type Range {
   Range(start: Int, end: Int, offset: Int)
 }
@@ -49,8 +53,78 @@ pub fn pt_2(almanac: Almanac) -> Int {
   |> find_lowest
 }
 
+pub type Overlap {
+  None
+  Left
+  Right
+  Middle
+  Full
+}
+
+pub fn overlap(a: Range, b: Range) -> Overlap {
+  case a.start < b.start, a.end < b.start, a.start > b.end, a.end > b.end {
+    True, True, _, _ -> None
+    _, _, True, True -> None
+    True, False, _, False -> Right
+    False, False, False, True -> Left
+    True, _, _, True -> Middle
+    False, False, False, False -> Full
+    _, _, _, _ -> panic
+  }
+}
+
+fn split_range(range: Range, b: Map) -> #(Range, List(Range)) {
+  case b {
+    Map([]) -> #(range, [])
+    Map([first, ..rest]) -> {
+      case overlap(range, first) {
+        None -> split_range(range, Map(rest))
+        Left -> #(Range(range.start, first.end, range.offset + first.offset), [
+          Range(first.end + 1, range.end, range.offset),
+        ])
+        Right -> #(Range(first.start, range.end, range.offset + first.offset), [
+          Range(range.start, first.start - 1, range.offset),
+        ])
+        Middle -> #(Range(..first, offset: range.offset + first.offset), [
+          Range(range.start, first.start - 1, range.offset),
+          Range(first.end + 1, range.end, range.offset),
+        ])
+        Full -> #(Range(..range, offset: range.offset + first.offset), [])
+      }
+    }
+  }
+}
+
+fn reducer_impl(a: Map, b: Map, acc: Map) -> Map {
+  case a {
+    Map([]) -> acc
+    Map([first, ..rest]) -> {
+      let #(mapped, remaining) = split_range(first, b)
+      reducer_impl(
+        Map(list.append(rest, remaining)),
+        b,
+        Map([mapped, ..acc.ranges]),
+      )
+    }
+  }
+}
+
+fn reducer(a: Map, b: Map) -> Map {
+  reducer_impl(a, b, Map([]))
+}
+
 fn find_lowest(maps: List(Map)) -> Int {
-  0
+  let Map(ranges) =
+    maps
+    |> list.reduce(reducer)
+    |> io.debug
+    |> result.unwrap(Map([]))
+
+  ranges
+  |> list.map(fn(range) { range.start + range.offset })
+  // |> io.debug
+  |> list.reduce(int.min)
+  |> result.unwrap(0)
 }
 
 fn pop(l: List(a), default: a) -> #(a, List(a)) {
