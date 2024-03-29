@@ -32,26 +32,20 @@ pub fn parse(input: String) -> Almanac {
 }
 
 pub fn pt_1(almanac: Almanac) -> Int {
-  0
-  // almanac.seeds
-  // |> list.map(fn(start) { Range(start, start, 0) })
-  // |> Map
-  // |> list.prepend(almanac.maps, _)
-  // |> find_lowest
+  almanac.seeds
+  |> list.map(fn(start) { Range(start, start, 0) })
+  |> Map
+  |> list.prepend(almanac.maps, _)
+  |> find_lowest
 }
 
 pub fn pt_2(almanac: Almanac) -> Int {
-  // almanac.seeds
-  // |> list.sized_chunk(2)
-  // |> list.map(fn(l) {
-  //   let assert [start, length] = l
-  //   Range(start, start + length - 1, 0)
-  // })
-  // |> io.debug
-  // |> Map
-  // |> list.prepend(almanac.maps, _)
-  // |> find_lowest
-  [Range(79, 82, 0)]
+  almanac.seeds
+  |> list.sized_chunk(2)
+  |> list.map(fn(l) {
+    let assert [start, length] = l
+    Range(start, start + length - 1, 0)
+  })
   |> Map
   |> list.prepend(almanac.maps, _)
   |> find_lowest
@@ -72,7 +66,6 @@ pub fn overlap(a: Range, b: Range) -> Overlap {
   let end2 = b.end
 
   case start1 < start2, end1 < start2, start1 > end2, end1 > end2 {
-    // case a.start < b.start, a.end < b.start, a.start > b.end, a.end > b.end {
     True, True, _, _ -> None
     _, _, True, True -> None
     True, False, _, False -> Right
@@ -87,10 +80,7 @@ pub fn split_range(range: Range, b: Map) -> #(Range, List(Range)) {
   case b {
     Map([]) -> #(range, [])
     Map([first, ..rest]) -> {
-      case
-        overlap(range, first)
-        |> io.debug
-      {
+      case overlap(range, first) {
         None -> split_range(range, Map(rest))
         Left -> #(
           Range(
@@ -125,31 +115,6 @@ pub fn split_range(range: Range, b: Map) -> #(Range, List(Range)) {
   }
 }
 
-// pub fn split_range(range: Range, b: Map) -> #(Range, List(Range)) {
-//   case b {
-//     Map([]) -> #(range, [])
-//     Map([first, ..rest]) -> {
-//       case
-//         overlap(range, first)
-//         |> io.debug
-//       {
-//         None -> split_range(range, Map(rest))
-//         Left -> #(Range(range.start, first.end, range.offset + first.offset), [
-//           Range(first.end + 1, range.end, range.offset),
-//         ])
-//         Right -> #(Range(first.start, range.end, range.offset + first.offset), [
-//           Range(range.start, first.start - 1, range.offset),
-//         ])
-//         Middle -> #(Range(..first, offset: range.offset + first.offset), [
-//           Range(range.start, first.start - 1, range.offset),
-//           Range(first.end + 1, range.end, range.offset),
-//         ])
-//         Full -> #(Range(..range, offset: range.offset + first.offset), [])
-//       }
-//     }
-//   }
-// }
-
 pub fn reducer_impl(a: Map, b: Map, acc: Map) -> Map {
   case a {
     Map([]) -> acc
@@ -173,7 +138,6 @@ fn find_lowest(maps: List(Map)) -> Int {
   let Map(ranges) =
     maps
     |> list.reduce(reducer)
-    |> io.debug
     |> result.unwrap(Map([]))
 
   ranges
