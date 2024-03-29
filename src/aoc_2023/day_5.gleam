@@ -155,19 +155,12 @@ fn find_lowest(maps: List(Map)) -> Int {
   |> result.unwrap(0)
 }
 
-fn pop(l: List(a), default: a) -> #(a, List(a)) {
-  case l {
-    [first, ..rest] -> #(first, rest)
-    [] -> #(default, [])
-  }
-}
-
 fn parse_numbers(line: String) -> Result(List(Int), Error) {
   line
   |> string.split(" ")
   |> list.map(int.base_parse(_, 10))
   |> result.all
-  |> result.replace_error(ParseError("Unable to parse seed numbers"))
+  |> result.replace_error(ParseError("Unable to parse numbers"))
 }
 
 fn parse_seed(line: String) -> Result(List(Int), Error) {
@@ -182,15 +175,17 @@ fn parse_seed(line: String) -> Result(List(Int), Error) {
 fn parse_map(lines: String) -> Result(Map, Error) {
   lines
   |> string.split("\n")
-  |> pop("")
-  |> pair.second
-  |> list.map(fn(line) {
+  |> list.rest
+  |> result.replace_error(ParseError("Map missing body"))
+  |> result.map(list.map(_, fn(line) {
     case parse_numbers(line) {
-      [dest_start, start, length] ->
+      Ok([dest_start, start, length]) ->
         Ok(Range(start, start + length - 1, dest_start - start))
-      _ -> Error(ParseError)
+      Error(e) -> Error(e)
+      Ok(_) -> Error(ParseError("Map line did not contain three numbers"))
     }
-  })
-  |> result.all
+  }))
+  |> result.map(result.all)
+  |> result.flatten
   |> result.map(Map)
 }
