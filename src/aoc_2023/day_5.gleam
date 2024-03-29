@@ -42,15 +42,16 @@ pub fn pt_1(almanac: Almanac) -> Int {
 }
 
 pub fn pt_2(almanac: Almanac) -> Int {
-  almanac.seeds
-  |> list.sized_chunk(2)
-  |> list.map(fn(l) {
-    let assert [start, length] = l
-    Range(start, start + length, 0)
-  })
-  |> Map
-  |> list.prepend(almanac.maps, _)
-  |> find_lowest
+  0
+  // almanac.seeds
+  // |> list.sized_chunk(2)
+  // |> list.map(fn(l) {
+  //   let assert [start, length] = l
+  //   Range(start, start + length, 0)
+  // })
+  // |> Map
+  // |> list.prepend(almanac.maps, _)
+  // |> find_lowest
 }
 
 pub type Overlap {
@@ -73,7 +74,7 @@ pub fn overlap(a: Range, b: Range) -> Overlap {
   }
 }
 
-fn split_range(range: Range, b: Map) -> #(Range, List(Range)) {
+pub fn split_range(range: Range, b: Map) -> #(Range, List(Range)) {
   case b {
     Map([]) -> #(range, [])
     Map([first, ..rest]) -> {
