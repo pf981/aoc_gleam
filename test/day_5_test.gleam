@@ -119,3 +119,24 @@ pub fn split_nothing_test() {
   day_5.split_range(r(5, 10), day_5.Map([]))
   |> should.equal(#(r(5, 10), []))
 }
+
+import gleam/io
+
+// pub fn wip_test() {
+//   io.debug("\n")
+//   day_5.reducer(
+//     day_5.Map([day_5.Range(79, 82, -5)]),
+//     day_5.Map([day_5.Range(77, 99, -32)]),
+//   )
+//   |> io.debug
+//   io.debug("\n")
+//   //   |> should.equal(day_5.Map([]))
+// }
+pub fn wip_test() {
+  io.debug("=======================================")
+  //   day_5.split_range(r(74, 77), day_5.Map([r(77, 79)]))
+  day_5.split_range(day_5.Range(79, 82, -5), day_5.Map([r(77, 79)]))
+  |> io.debug
+  io.debug("=======================================")
+  //   |> should.equal(day_5.Map([]))
+}
