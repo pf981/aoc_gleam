@@ -132,41 +132,38 @@ fn get_hand_type(hand: Hand) -> Result(HandType, Error) {
   }
 }
 
-// fn score(play: Play, jokers: Int) -> Result(#(Play, Int), Error) {
-//   use hand_type <- result.map(get_hand_type(play.hand))
-//   let primary_score = case hand_type {
-//     HighCard -> 0
-//     OnePair -> 1
-//     TwoPair -> 2
-//     ThreeOfAKind -> 3
-//     FullHouse -> 4
-//     FourOfAKind -> 5
-//     FiveOfAKind -> 6
-//   }
-//   let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
-
-//   #(play, 10_000_000_000 * primary_score + secondary_score)
-// }
+import gleam/io
 
 fn score(play: Play, jokers) -> Result(#(Play, Int), Error) {
   use hand_type <- result.map(get_hand_type(play.hand))
   let primary_score = case hand_type, jokers {
     HighCard, 0 -> 0
-    OnePair, 0 | HighCard, _ -> 1
+    OnePair, 0 | HighCard, 1 -> 1
     TwoPair, 0 -> 2
-    ThreeOfAKind, 0 | OnePair, _ -> 3
+    ThreeOfAKind, 0 | OnePair, 1 | OnePair, 2 -> 3
     FullHouse, 0 | TwoPair, 1 -> 4
-    FourOfAKind, 0 | ThreeOfAKind, _ | TwoPair, _ -> 5
-    _, _ -> 6
+    FourOfAKind, 0 | ThreeOfAKind, 1 | ThreeOfAKind, 3 | TwoPair, 2 -> 5
+    FiveOfAKind, 0
+    | FiveOfAKind, 5
+    | FourOfAKind, 1
+    | FourOfAKind, 4
+    | FullHouse, 2
+    | FullHouse, 3 -> 6
+    a, b -> {
+      io.debug(#(a, b))
+      panic
+    }
   }
   let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
 
   #(play, 10_000_000_000 * primary_score + secondary_score)
 }
-// HighCard 1 -> OnePair
-// OnePair 1 -> ThreeOfAKind; 2 -> ThreeOfAKind
-// TwoPair 1 -> FullHouse; 2 -> FourOfAKind
-// ThreeOfAKind 1 -> FourOfAKind; 3 -> FourOfAKind
-// FullHouse -> FiveOfAKind
-// FourOfAKind -> FiveOfAKind
-// FiveOfAKind -> FiveOfAKind
+// let primary_score = case hand_type, jokers {
+//   HighCard, 0 -> 0
+//   OnePair, 0 | HighCard, _ -> 1
+//   TwoPair, 0 -> 2
+//   ThreeOfAKind, 0 | OnePair, _ -> 3
+//   FullHouse, 0 | TwoPair, 1 -> 4
+//   FourOfAKind, 0 | ThreeOfAKind, _ | TwoPair, _ -> 5
+//   _, _ -> 6
+// }
