@@ -58,30 +58,54 @@ fn parse_hand(line: String) -> Result(Hand, Error) {
   string.to_graphemes(line)
   |> list.map(fn(c) {
     case c {
-      "A" -> Ok(12)
-      "K" -> Ok(11)
-      "Q" -> Ok(0)
-      "J" -> Ok(9)
-      "T" -> Ok(8)
-      "9" -> Ok(7)
-      "8" -> Ok(6)
-      "7" -> Ok(5)
-      "6" -> Ok(4)
-      "5" -> Ok(3)
-      "4" -> Ok(2)
-      "3" -> Ok(1)
-      "2" -> Ok(0)
+      "A" -> Ok(14)
+      "K" -> Ok(13)
+      "Q" -> Ok(12)
+      "J" -> Ok(11)
+      "T" -> Ok(10)
+      "9" -> Ok(9)
+      "8" -> Ok(8)
+      "7" -> Ok(7)
+      "6" -> Ok(6)
+      "5" -> Ok(5)
+      "4" -> Ok(4)
+      "3" -> Ok(3)
+      "2" -> Ok(2)
       _ -> Error(ParseError("Hand contains unknown character"))
     }
   })
   |> result.all
 }
 
-fn score(play: Play) -> #(Play, Int) {
-  let primary_score = 0
-  let secondary_score = 0
+fn count(hand: Hand) -> #(Int, Int, Int, Int, Int) {
+  todo
+}
 
-  #(play, 100 * primary_score + secondary_score)
+fn get_primary_score(hand: Hand) -> Int {
+  case count(hand) {
+    #(1, 1, 1, 1, 1) -> 0
+    #(2, 1, 1, 1, 0) -> 1
+    #(2, 2, 1, 0, 0) -> 2
+    #(3, 1, 1, 0, 0) -> 3
+    #(3, 2, 0, 0, 0) -> 4
+    #(4, 1, 0, 0, 0) -> 5
+    #(5, 0, 0, 0, 0) -> 6
+    _ -> panic
+  }
+}
+
+fn get_secondary_score(acc: Int, hand: Hand) -> Int {
+  case hand {
+    [] -> acc
+    [first, ..rest] -> get_secondary_score(10 * acc + first, rest)
+  }
+}
+
+fn score(play: Play) -> #(Play, Int) {
+  let primary_score = get_primary_score(play.hand)
+  let secondary_score = get_secondary_score(0, play.hand)
+
+  #(play, 1_000_000 * primary_score + secondary_score)
 }
 // fn play_comparer(cmp: fn(Hand, Hand) -> Order) -> fn(Play, Play) -> Order {
 //   fn(a: Play, b: Play) { cmp(a.hand, b.hand) }
