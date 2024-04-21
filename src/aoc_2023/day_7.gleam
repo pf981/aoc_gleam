@@ -24,21 +24,11 @@ pub fn parse(input: String) -> Result(List(Play), Error) {
 }
 
 pub fn pt_1(plays: Result(List(Play), Error)) -> Result(Int, Error) {
-  result.try(plays, compute_winnings(_, score_standard))
+  result.try(plays, calculate_winnings(_, Standard))
 }
 
 pub fn pt_2(plays: Result(List(Play), Error)) -> Result(Int, Error) {
-  use plays <- result.try(plays)
-  use scores <- result.map(
-    plays
-    |> list.map(score_jokers)
-    |> result.all,
-  )
-
-  scores
-  |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
-  |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
-  |> int.sum
+  result.try(plays, calculate_winnings(_, JokersWild))
 }
 
 type HandType {
@@ -49,6 +39,11 @@ type HandType {
   FullHouse
   FourOfAKind
   FiveOfAKind
+}
+
+type GameType {
+  Standard
+  JokersWild
 }
 
 fn parse_play(line: String) -> Result(Play, Error) {
@@ -89,24 +84,31 @@ fn parse_hand(line: String) -> Result(Hand, Error) {
   |> result.all
 }
 
-pub fn compute_winnings(
+fn calculate_winnings(
   plays: List(Play),
-  scorer: fn(Hand) -> Result(Int, Error),
+  game_type: GameType,
 ) -> Result(Int, Error) {
-  let #(hands, bids) =
-    plays
-    |> list.map(fn(play) { #(play.hand, play.bid) })
-    |> list.unzip()
+  let scorer = case game_type {
+    Standard -> fn(play) { score(play, 0) }
+    JokersWild -> fn(play) {
+      score(
+        play,
+        play.hand
+          |> list.filter(fn(el) { el == 11 })
+          |> list.length,
+      )
+    }
+  }
 
   use scores <- result.map(
-    hands
+    plays
     |> list.map(scorer)
     |> result.all,
   )
 
-  list.zip(bids, scores)
+  scores
   |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
-  |> list.index_map(fn(pair, i) { { i + 1 } * pair.0 })
+  |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
   |> int.sum
 }
 
@@ -130,61 +132,24 @@ fn get_hand_type(hand: Hand) -> Result(HandType, Error) {
   }
 }
 
-fn get_primary_score(hand: Hand) -> Result(Int, Error) {
-  use hand_type <- result.map(get_hand_type(hand))
-  let primary_score = case hand_type {
-    HighCard -> 0
-    OnePair -> 1
-    TwoPair -> 2
-    ThreeOfAKind -> 3
-    FullHouse -> 4
-    FourOfAKind -> 5
-    FiveOfAKind -> 6
-  }
-  10_000_000_000 * primary_score
-}
+// fn score(play: Play, jokers: Int) -> Result(#(Play, Int), Error) {
+//   use hand_type <- result.map(get_hand_type(play.hand))
+//   let primary_score = case hand_type {
+//     HighCard -> 0
+//     OnePair -> 1
+//     TwoPair -> 2
+//     ThreeOfAKind -> 3
+//     FullHouse -> 4
+//     FourOfAKind -> 5
+//     FiveOfAKind -> 6
+//   }
+//   let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
 
-fn get_secondary_score(hand: Hand) -> Int {
-  list.fold(hand, 0, fn(acc, el) { 100 * acc + el })
-}
+//   #(play, 10_000_000_000 * primary_score + secondary_score)
+// }
 
-fn score_standard(hand: Hand) -> Result(Int, Error) {
-  use primary_score <- result.map(get_primary_score(hand))
-  let secondary_score = get_secondary_score(hand)
-
-  primary_score + secondary_score
-}
-
-fn replace_joker(hand: Hand, replacement: Int) -> Hand {
-  list.map(hand, fn(el) {
-    case el {
-      11 -> replacement
-      _ -> el
-    }
-  })
-}
-
-fn score_wild(hand: Hand) -> Result(Int, Error) {
-  let possible_primary_scores =
-    list.map(list.range(2, 14), fn(replacement) {
-      hand
-      |> replace_joker(replacement)
-      |> get_primary_score
-    })
-  use possible_primary_scores <- result.map(result.all(possible_primary_scores))
-  let primary_score = list.fold(possible_primary_scores, 0, int.max)
-
-  let secondary_score = get_secondary_score(replace_joker(hand, 1))
-
-  primary_score + secondary_score
-}
-
-fn score_jokers(play: Play) -> Result(#(Play, Int), Error) {
+fn score(play: Play, jokers) -> Result(#(Play, Int), Error) {
   use hand_type <- result.map(get_hand_type(play.hand))
-  let jokers =
-    play.hand
-    |> list.filter(fn(el) { el == 11 })
-    |> list.length
   let primary_score = case hand_type, jokers {
     HighCard, 0 -> 0
     OnePair, 0 | HighCard, _ -> 1
