@@ -1,6 +1,7 @@
+import gleam/dict
 import gleam/int
 import gleam/list
-import gleam/order.{type Order}
+import gleam/option
 import gleam/result
 import gleam/string
 
@@ -24,9 +25,10 @@ pub fn parse(input: String) -> Result(List(Play), Error) {
 pub fn pt_1(plays: Result(List(Play), Error)) -> Result(Int, Error) {
   use plays <- result.map(plays)
   plays
+  // |> io.debug
   |> list.map(score)
   |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
-  |> list.index_map(fn(pair, i) { i * { pair.0 }.bid })
+  |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
   |> int.sum
   // plays
   // |> list.sort(compare_play)
@@ -77,44 +79,67 @@ fn parse_hand(line: String) -> Result(Hand, Error) {
   |> result.all
 }
 
-fn count(hand: Hand) -> #(Int, Int, Int, Int, Int) {
-  todo
+type HandType {
+  HighCard
+  OnePair
+  TwoPair
+  ThreeOfAKind
+  FullHouse
+  FourOfAKind
+  FiveOfAKind
 }
 
-fn get_primary_score(hand: Hand) -> Int {
-  case count(hand) {
-    #(1, 1, 1, 1, 1) -> 0
-    #(2, 1, 1, 1, 0) -> 1
-    #(2, 2, 1, 0, 0) -> 2
-    #(3, 1, 1, 0, 0) -> 3
-    #(3, 2, 0, 0, 0) -> 4
-    #(4, 1, 0, 0, 0) -> 5
-    #(5, 0, 0, 0, 0) -> 6
+import gleam/io
+
+fn get_hand_type(hand: Hand) -> HandType {
+  let counts =
+    list.fold(hand, dict.new(), fn(acc, el) {
+      dict.update(acc, el, fn(value) { option.unwrap(value, 0) + 1 })
+    })
+    |> dict.values
+    |> list.sort(int.compare)
+
+  case counts {
+    [1, 1, 1, 1, 1] -> HighCard
+    [1, 1, 1, 2] -> OnePair
+    [1, 2, 2] -> TwoPair
+    [1, 1, 3] -> ThreeOfAKind
+    [2, 3] -> FullHouse
+    [1, 4] -> FourOfAKind
+    [5] -> FiveOfAKind
     _ -> panic
   }
 }
 
-fn get_secondary_score(acc: Int, hand: Hand) -> Int {
+fn get_primary_score(hand: Hand) -> Int {
+  case get_hand_type(hand) {
+    HighCard -> 0
+    OnePair -> 1
+    TwoPair -> 2
+    ThreeOfAKind -> 3
+    FullHouse -> 4
+    FourOfAKind -> 5
+    FiveOfAKind -> 6
+  }
+}
+
+fn impl_get_secondary_score(acc: Int, hand: Hand) -> Int {
   case hand {
     [] -> acc
-    [first, ..rest] -> get_secondary_score(10 * acc + first, rest)
+    [first, ..rest] -> impl_get_secondary_score(100 * acc + first, rest)
   }
+}
+
+fn get_secondary_score(hand: Hand) -> Int {
+  impl_get_secondary_score(0, hand)
 }
 
 fn score(play: Play) -> #(Play, Int) {
   let primary_score = get_primary_score(play.hand)
-  let secondary_score = get_secondary_score(0, play.hand)
+  let secondary_score = get_secondary_score(play.hand)
 
-  #(play, 1_000_000 * primary_score + secondary_score)
+  #(
+    play,
+    10_000_000_000_000_000_000_000_000_000_000 * primary_score + secondary_score,
+  )
 }
-// fn play_comparer(cmp: fn(Hand, Hand) -> Order) -> fn(Play, Play) -> Order {
-//   fn(a: Play, b: Play) { cmp(a.hand, b.hand) }
-// }
-
-// fn compare_play(a: Play, b: Play) -> Order {
-//   compare_hand(a.hand, b.hand)
-// }
-
-// fn compare_hand(a: Hand, b: Hand) -> Order {
-//   todo
-// }
