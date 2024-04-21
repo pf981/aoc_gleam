@@ -24,11 +24,11 @@ pub fn parse(input: String) -> Result(List(Play), Error) {
 }
 
 pub fn pt_1(plays: Result(List(Play), Error)) -> Result(Int, Error) {
-  result.try(plays, calculate_winnings(_, Standard))
+  result.try(plays, calculate_winnings(_, standard_score))
 }
 
 pub fn pt_2(plays: Result(List(Play), Error)) -> Result(Int, Error) {
-  result.try(plays, calculate_winnings(_, JokersWild))
+  result.try(plays, calculate_winnings(_, jokers_wild_score))
 }
 
 type HandType {
@@ -39,11 +39,6 @@ type HandType {
   FullHouse
   FourOfAKind
   FiveOfAKind
-}
-
-type GameType {
-  Standard
-  JokersWild
 }
 
 fn parse_play(line: String) -> Result(Play, Error) {
@@ -86,20 +81,8 @@ fn parse_hand(line: String) -> Result(Hand, Error) {
 
 fn calculate_winnings(
   plays: List(Play),
-  game_type: GameType,
+  scorer: fn(Play) -> Result(#(Play, Int), Error),
 ) -> Result(Int, Error) {
-  let scorer = case game_type {
-    Standard -> fn(play) { score(play, 0) }
-    JokersWild -> fn(play) {
-      score(
-        play,
-        play.hand
-          |> list.filter(fn(el) { el == 11 })
-          |> list.length,
-      )
-    }
-  }
-
   use scores <- result.map(
     plays
     |> list.map(scorer)
@@ -132,38 +115,49 @@ fn get_hand_type(hand: Hand) -> Result(HandType, Error) {
   }
 }
 
-import gleam/io
-
-fn score(play: Play, jokers) -> Result(#(Play, Int), Error) {
+fn standard_score(play: Play) -> Result(#(Play, Int), Error) {
   use hand_type <- result.map(get_hand_type(play.hand))
-  let primary_score = case hand_type, jokers {
-    HighCard, 0 -> 0
-    OnePair, 0 | HighCard, 1 -> 1
-    TwoPair, 0 -> 2
-    ThreeOfAKind, 0 | OnePair, 1 | OnePair, 2 -> 3
-    FullHouse, 0 | TwoPair, 1 -> 4
-    FourOfAKind, 0 | ThreeOfAKind, 1 | ThreeOfAKind, 3 | TwoPair, 2 -> 5
-    FiveOfAKind, 0
-    | FiveOfAKind, 5
-    | FourOfAKind, 1
-    | FourOfAKind, 4
-    | FullHouse, 2
-    | FullHouse, 3 -> 6
-    a, b -> {
-      io.debug(#(a, b))
-      panic
-    }
+  let primary_score = case hand_type {
+    HighCard -> 0
+    OnePair -> 1
+    TwoPair -> 2
+    ThreeOfAKind -> 3
+    FullHouse -> 4
+    FourOfAKind -> 5
+    FiveOfAKind -> 6
   }
   let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
 
   #(play, 10_000_000_000 * primary_score + secondary_score)
 }
-// let primary_score = case hand_type, jokers {
-//   HighCard, 0 -> 0
-//   OnePair, 0 | HighCard, _ -> 1
-//   TwoPair, 0 -> 2
-//   ThreeOfAKind, 0 | OnePair, _ -> 3
-//   FullHouse, 0 | TwoPair, 1 -> 4
-//   FourOfAKind, 0 | ThreeOfAKind, _ | TwoPair, _ -> 5
-//   _, _ -> 6
-// }
+
+fn jokers_wild_score(play: Play) -> Result(#(Play, Int), Error) {
+  let play =
+    Play(
+      list.map(play.hand, fn(el) {
+        case el == 11 {
+          True -> 1
+          False -> el
+        }
+      }),
+      play.bid,
+    )
+  let jokers =
+    play.hand
+    |> list.filter(fn(el) { el == 1 })
+    |> list.length
+
+  use hand_type <- result.map(get_hand_type(play.hand))
+  let primary_score = case hand_type, jokers {
+    HighCard, 0 -> 0
+    OnePair, 0 | HighCard, _ -> 1
+    TwoPair, 0 -> 2
+    ThreeOfAKind, 0 | OnePair, _ -> 3
+    FullHouse, 0 | TwoPair, 1 -> 4
+    FourOfAKind, 0 | ThreeOfAKind, _ | TwoPair, _ -> 5
+    _, _ -> 6
+  }
+  let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
+
+  #(play, 10_000_000_000 * primary_score + secondary_score)
+}
