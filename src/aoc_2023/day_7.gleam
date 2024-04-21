@@ -5,15 +5,16 @@ import gleam/option
 import gleam/result
 import gleam/string
 
+pub type Error {
+  ParseError(message: String)
+  InvalidHand
+}
+
 pub type Hand =
   List(Int)
 
 pub type Play {
   Play(hand: Hand, bid: Int)
-}
-
-pub type Error {
-  ParseError(message: String)
 }
 
 pub fn parse(input: String) -> Result(List(Play), Error) {
@@ -23,22 +24,32 @@ pub fn parse(input: String) -> Result(List(Play), Error) {
 }
 
 pub fn pt_1(plays: Result(List(Play), Error)) -> Result(Int, Error) {
-  use plays <- result.map(plays)
-  plays
-  // |> io.debug
-  |> list.map(score)
+  use plays <- result.try(plays)
+  use scores <- result.map(
+    plays
+    |> list.map(score)
+    |> result.all,
+  )
+
+  scores
   |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
   |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
   |> int.sum
-  // plays
-  // |> list.sort(compare_play)
-  // |> list.index_map(fn(play, i) { i * play.bid })
-  // |> int.sum
 }
 
 pub fn pt_2(hands: Result(List(Play), Error)) -> Result(Int, Error) {
   use hands <- result.map(hands)
   1
+}
+
+type HandType {
+  HighCard
+  OnePair
+  TwoPair
+  ThreeOfAKind
+  FullHouse
+  FourOfAKind
+  FiveOfAKind
 }
 
 fn parse_play(line: String) -> Result(Play, Error) {
@@ -79,19 +90,7 @@ fn parse_hand(line: String) -> Result(Hand, Error) {
   |> result.all
 }
 
-type HandType {
-  HighCard
-  OnePair
-  TwoPair
-  ThreeOfAKind
-  FullHouse
-  FourOfAKind
-  FiveOfAKind
-}
-
-import gleam/io
-
-fn get_hand_type(hand: Hand) -> HandType {
+fn get_hand_type(hand: Hand) -> Result(HandType, Error) {
   let counts =
     list.fold(hand, dict.new(), fn(acc, el) {
       dict.update(acc, el, fn(value) { option.unwrap(value, 0) + 1 })
@@ -100,19 +99,20 @@ fn get_hand_type(hand: Hand) -> HandType {
     |> list.sort(int.compare)
 
   case counts {
-    [1, 1, 1, 1, 1] -> HighCard
-    [1, 1, 1, 2] -> OnePair
-    [1, 2, 2] -> TwoPair
-    [1, 1, 3] -> ThreeOfAKind
-    [2, 3] -> FullHouse
-    [1, 4] -> FourOfAKind
-    [5] -> FiveOfAKind
-    _ -> panic
+    [1, 1, 1, 1, 1] -> Ok(HighCard)
+    [1, 1, 1, 2] -> Ok(OnePair)
+    [1, 2, 2] -> Ok(TwoPair)
+    [1, 1, 3] -> Ok(ThreeOfAKind)
+    [2, 3] -> Ok(FullHouse)
+    [1, 4] -> Ok(FourOfAKind)
+    [5] -> Ok(FiveOfAKind)
+    _ -> Error(InvalidHand)
   }
 }
 
-fn get_primary_score(hand: Hand) -> Int {
-  case get_hand_type(hand) {
+fn score(play: Play) -> Result(#(Play, Int), Error) {
+  use hand_type <- result.map(get_hand_type(play.hand))
+  let primary_score = case hand_type {
     HighCard -> 0
     OnePair -> 1
     TwoPair -> 2
@@ -121,25 +121,7 @@ fn get_primary_score(hand: Hand) -> Int {
     FourOfAKind -> 5
     FiveOfAKind -> 6
   }
-}
+  let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
 
-fn impl_get_secondary_score(acc: Int, hand: Hand) -> Int {
-  case hand {
-    [] -> acc
-    [first, ..rest] -> impl_get_secondary_score(100 * acc + first, rest)
-  }
-}
-
-fn get_secondary_score(hand: Hand) -> Int {
-  impl_get_secondary_score(0, hand)
-}
-
-fn score(play: Play) -> #(Play, Int) {
-  let primary_score = get_primary_score(play.hand)
-  let secondary_score = get_secondary_score(play.hand)
-
-  #(
-    play,
-    10_000_000_000_000_000_000_000_000_000_000 * primary_score + secondary_score,
-  )
+  #(play, 10_000_000_000 * primary_score + secondary_score)
 }
