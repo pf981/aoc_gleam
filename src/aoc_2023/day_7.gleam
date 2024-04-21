@@ -1,5 +1,6 @@
 import gleam/int
 import gleam/list
+import gleam/order.{type Order}
 import gleam/result
 import gleam/string
 
@@ -20,9 +21,17 @@ pub fn parse(input: String) -> Result(List(Play), Error) {
   |> result.all
 }
 
-pub fn pt_1(hands: Result(List(Play), Error)) -> Result(Int, Error) {
-  use hands <- result.map(hands)
-  1
+pub fn pt_1(plays: Result(List(Play), Error)) -> Result(Int, Error) {
+  use plays <- result.map(plays)
+  plays
+  |> list.map(score)
+  |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
+  |> list.index_map(fn(pair, i) { i * { pair.0 }.bid })
+  |> int.sum
+  // plays
+  // |> list.sort(compare_play)
+  // |> list.index_map(fn(play, i) { i * play.bid })
+  // |> int.sum
 }
 
 pub fn pt_2(hands: Result(List(Play), Error)) -> Result(Int, Error) {
@@ -67,3 +76,21 @@ fn parse_hand(line: String) -> Result(Hand, Error) {
   })
   |> result.all
 }
+
+fn score(play: Play) -> #(Play, Int) {
+  let primary_score = 0
+  let secondary_score = 0
+
+  #(play, 100 * primary_score + secondary_score)
+}
+// fn play_comparer(cmp: fn(Hand, Hand) -> Order) -> fn(Play, Play) -> Order {
+//   fn(a: Play, b: Play) { cmp(a.hand, b.hand) }
+// }
+
+// fn compare_play(a: Play, b: Play) -> Order {
+//   compare_hand(a.hand, b.hand)
+// }
+
+// fn compare_hand(a: Hand, b: Hand) -> Order {
+//   todo
+// }
