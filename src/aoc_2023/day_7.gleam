@@ -28,7 +28,17 @@ pub fn pt_1(plays: Result(List(Play), Error)) -> Result(Int, Error) {
 }
 
 pub fn pt_2(plays: Result(List(Play), Error)) -> Result(Int, Error) {
-  result.try(plays, compute_winnings(_, score_wild))
+  use plays <- result.try(plays)
+  use scores <- result.map(
+    plays
+    |> list.map(score_jokers)
+    |> result.all,
+  )
+
+  scores
+  |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
+  |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
+  |> int.sum
 }
 
 type HandType {
@@ -168,3 +178,30 @@ fn score_wild(hand: Hand) -> Result(Int, Error) {
 
   primary_score + secondary_score
 }
+
+fn score_jokers(play: Play) -> Result(#(Play, Int), Error) {
+  use hand_type <- result.map(get_hand_type(play.hand))
+  let jokers =
+    play.hand
+    |> list.filter(fn(el) { el == 11 })
+    |> list.length
+  let primary_score = case hand_type, jokers {
+    HighCard, 0 -> 0
+    OnePair, 0 | HighCard, _ -> 1
+    TwoPair, 0 -> 2
+    ThreeOfAKind, 0 | OnePair, _ -> 3
+    FullHouse, 0 | TwoPair, 1 -> 4
+    FourOfAKind, 0 | ThreeOfAKind, _ | TwoPair, _ -> 5
+    _, _ -> 6
+  }
+  let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
+
+  #(play, 10_000_000_000 * primary_score + secondary_score)
+}
+// HighCard 1 -> OnePair
+// OnePair 1 -> ThreeOfAKind; 2 -> ThreeOfAKind
+// TwoPair 1 -> FullHouse; 2 -> FourOfAKind
+// ThreeOfAKind 1 -> FourOfAKind; 3 -> FourOfAKind
+// FullHouse -> FiveOfAKind
+// FourOfAKind -> FiveOfAKind
+// FiveOfAKind -> FiveOfAKind
