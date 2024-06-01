@@ -24,31 +24,11 @@ pub fn parse(input: String) -> Result(List(Play), Error) {
 }
 
 pub fn pt_1(plays: Result(List(Play), Error)) -> Result(Int, Error) {
-  use plays <- result.try(plays)
-  use scores <- result.map(
-    plays
-    |> list.map(score)
-    |> result.all,
-  )
-
-  scores
-  |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
-  |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
-  |> int.sum
+  result.try(plays, compute_winnings(_, score))
 }
 
 pub fn pt_2(plays: Result(List(Play), Error)) -> Result(Int, Error) {
-  use plays <- result.try(plays)
-  use scores <- result.map(
-    plays
-    |> list.map(score_wild)
-    |> result.all,
-  )
-
-  scores
-  |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
-  |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
-  |> int.sum
+  result.try(plays, compute_winnings(_, score_wild))
 }
 
 type HandType {
@@ -59,6 +39,22 @@ type HandType {
   FullHouse
   FourOfAKind
   FiveOfAKind
+}
+
+pub fn compute_winnings(
+  plays: List(Play),
+  scorer: fn(Play) -> Result(Int, Error),
+) -> Result(Int, Error) {
+  use scores <- result.map(
+    plays
+    |> list.map(scorer)
+    |> result.all,
+  )
+
+  list.zip(plays, scores)
+  |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
+  |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
+  |> int.sum
 }
 
 fn parse_play(line: String) -> Result(Play, Error) {
@@ -119,7 +115,7 @@ fn get_hand_type(hand: Hand) -> Result(HandType, Error) {
   }
 }
 
-fn score(play: Play) -> Result(#(Play, Int), Error) {
+fn score(play: Play) -> Result(Int, Error) {
   use hand_type <- result.map(get_hand_type(play.hand))
   let primary_score = case hand_type {
     HighCard -> 0
@@ -132,10 +128,10 @@ fn score(play: Play) -> Result(#(Play, Int), Error) {
   }
   let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
 
-  #(play, 10_000_000_000 * primary_score + secondary_score)
+  10_000_000_000 * primary_score + secondary_score
 }
 
-fn score_wild(play: Play) -> Result(#(Play, Int), Error) {
+fn score_wild(play: Play) -> Result(Int, Error) {
   let replacements = list.range(2, 14)
   let possible_primary_scores =
     list.map(replacements, fn(replacement) {
@@ -170,10 +166,7 @@ fn score_wild(play: Play) -> Result(#(Play, Int), Error) {
       100 * acc + el
     })
 
-  #(
-    play,
-    10_000_000_000
-      * list.fold(possible_primary_scores, 0, int.max)
-      + secondary_score,
-  )
+  10_000_000_000
+  * list.fold(possible_primary_scores, 0, int.max)
+  + secondary_score
 }
