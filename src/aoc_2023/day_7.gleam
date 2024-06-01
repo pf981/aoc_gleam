@@ -37,9 +37,18 @@ pub fn pt_1(plays: Result(List(Play), Error)) -> Result(Int, Error) {
   |> int.sum
 }
 
-pub fn pt_2(hands: Result(List(Play), Error)) -> Result(Int, Error) {
-  use hands <- result.map(hands)
-  1
+pub fn pt_2(plays: Result(List(Play), Error)) -> Result(Int, Error) {
+  use plays <- result.try(plays)
+  use scores <- result.map(
+    plays
+    |> list.map(score_wild)
+    |> result.all,
+  )
+
+  scores
+  |> list.sort(fn(pair1, pair2) { int.compare(pair1.1, pair2.1) })
+  |> list.index_map(fn(pair, i) { { i + 1 } * { pair.0 }.bid })
+  |> int.sum
 }
 
 type HandType {
@@ -124,4 +133,47 @@ fn score(play: Play) -> Result(#(Play, Int), Error) {
   let secondary_score = list.fold(play.hand, 0, fn(acc, el) { 100 * acc + el })
 
   #(play, 10_000_000_000 * primary_score + secondary_score)
+}
+
+fn score_wild(play: Play) -> Result(#(Play, Int), Error) {
+  let replacements = list.range(2, 14)
+  let possible_primary_scores =
+    list.map(replacements, fn(replacement) {
+      let hand =
+        list.map(play.hand, fn(el) {
+          case el {
+            _ if el == 11 -> replacement
+            _ -> el
+          }
+        })
+
+      use hand_type <- result.map(get_hand_type(hand))
+      let primary_score = case hand_type {
+        HighCard -> 0
+        OnePair -> 1
+        TwoPair -> 2
+        ThreeOfAKind -> 3
+        FullHouse -> 4
+        FourOfAKind -> 5
+        FiveOfAKind -> 6
+      }
+      primary_score
+    })
+  use possible_primary_scores <- result.map(result.all(possible_primary_scores))
+
+  let secondary_score =
+    list.fold(play.hand, 0, fn(acc, el) {
+      let el = case el {
+        11 -> 1
+        _ -> el
+      }
+      100 * acc + el
+    })
+
+  #(
+    play,
+    10_000_000_000
+      * list.fold(possible_primary_scores, 0, int.max)
+      + secondary_score,
+  )
 }
