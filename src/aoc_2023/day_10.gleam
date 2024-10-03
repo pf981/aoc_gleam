@@ -6,6 +6,8 @@ import gleam/list
 import gleam/result
 import gleam/string
 
+import gleam/io
+
 pub type Grid {
   Grid(m: Dict(Pos, Pipe), dimensions: Pos)
 }
@@ -59,10 +61,10 @@ pub fn parse(input: String) -> Grid {
 pub fn pt_1(grid: Grid) {
   let #(start_pos, heading) = get_start(grid)
 
-  count_pipes(grid, start_pos, pos: Pos, heading: Heading)
+  count_pipes(grid, start_pos, heading) / 2 + 1
 }
 
-pub fn pt_2(grid: List(List(String))) {
+pub fn pt_2(grid: Grid) {
   todo as "part 2 not implemented"
 }
 
@@ -110,10 +112,32 @@ fn get_start(grid: Grid) -> #(Pos, Heading) {
   #(Pos(row, col), heading)
 }
 
-fn next_pipe(grid: Grid, pos: Pos, heading: Heading) -> #(Pos, Heading) {
-  todo
-}
+fn count_pipes(grid: Grid, pos: Pos, heading: Heading) -> Int {
+  let new_pos = case heading {
+    N -> Pos(pos.row - 1, pos.col)
+    E -> Pos(pos.row, pos.col + 1)
+    S -> Pos(pos.row + 1, pos.col)
+    W -> Pos(pos.row, pos.col - 1)
+  }
+  let assert Ok(pipe) = dict.get(grid.m, new_pos)
 
-fn count_pipes(grid: Grid, start_pos: Pos, pos: Pos, heading: Heading) -> Int {
-  todo
+  use <- bool.guard(pipe == Start, 0)
+
+  let new_heading = case pipe, heading {
+    NS, S -> S
+    NS, N -> N
+    EW, W -> W
+    EW, E -> E
+    NE, S -> E
+    NE, W -> N
+    NW, S -> W
+    NW, E -> N
+    SW, N -> W
+    SW, E -> S
+    SE, N -> E
+    SE, W -> S
+    _, _ -> panic
+  }
+
+  1 + count_pipes(grid, new_pos, new_heading)
 }
