@@ -1,5 +1,3 @@
-import gleam/bool
-import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/result
@@ -19,32 +17,30 @@ pub fn parse(input: String) -> Space {
   let n_rows = list.length(lines)
   let n_cols = lines |> list.first |> result.unwrap("") |> string.length
 
-  let space =
-    list.index_fold(
-      lines,
-      Space(
-        [],
-        set.from_list(list.range(0, n_rows)),
-        set.from_list(list.range(0, n_cols)),
-      ),
-      fn(s, line, row) {
-        line
-        |> string.to_graphemes
-        |> list.index_fold(s, fn(s, c, col) {
-          case c {
-            "#" ->
-              Space(
-                [Pos(row, col), ..s.galaxies],
-                set.delete(s.empty_rows, row),
-                set.delete(s.empty_cols, col),
-              )
-            "." -> s
-            _ -> panic
-          }
-        })
-      },
-    )
-  space
+  list.index_fold(
+    lines,
+    Space(
+      [],
+      set.from_list(list.range(0, n_rows)),
+      set.from_list(list.range(0, n_cols)),
+    ),
+    fn(space, line, row) {
+      line
+      |> string.to_graphemes
+      |> list.index_fold(space, fn(s, c, col) {
+        case c {
+          "#" ->
+            Space(
+              [Pos(row, col), ..space.galaxies],
+              set.delete(space.empty_rows, row),
+              set.delete(space.empty_cols, col),
+            )
+          "." -> s
+          _ -> panic
+        }
+      })
+    },
+  )
 }
 
 pub fn pt_1(space: Space) {
