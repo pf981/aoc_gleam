@@ -45,7 +45,20 @@ pub fn pt_1(reports: List(Report)) {
 }
 
 pub fn pt_2(reports: List(Report)) {
-  todo as "part 2 not implemented"
+  let reports =
+    list.map(reports, fn(report) {
+      let assert Ok(conditions) =
+        [Unknown, ..report.conditions] |> x5 |> list.rest
+      Report(conditions, x5(report.contiguous_damaged))
+    })
+  reports |> list.map(count_arrangements) |> io.debug |> int.sum
+}
+
+fn x5(l: List(a)) -> List(a) {
+  list.range(0, 4)
+  |> list.map(fn(_) { l })
+  |> list.concat
+  |> io.debug
 }
 
 fn count_arrangements(report: Report) -> Int {
@@ -92,9 +105,7 @@ fn count_arrangements_impl(
 }
 
 fn split_first(l: List(a), n: Int) -> Result(#(List(a), List(a)), Nil) {
-  // io.debug(#(l, n))
   split_first_impl([], l, n)
-  //|> io.debug
 }
 
 fn split_first_impl(
