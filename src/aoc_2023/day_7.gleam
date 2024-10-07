@@ -98,7 +98,7 @@ fn calculate_winnings(
 fn get_hand_type(hand: Hand) -> Result(HandType, Error) {
   let counts =
     list.fold(hand, dict.new(), fn(acc, el) {
-      dict.update(acc, el, fn(value) { option.unwrap(value, 0) + 1 })
+      dict.upsert(acc, el, fn(value) { option.unwrap(value, 0) + 1 })
     })
     |> dict.values
     |> list.sort(int.compare)
