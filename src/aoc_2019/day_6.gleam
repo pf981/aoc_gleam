@@ -26,7 +26,7 @@ pub fn pt_1(orbits: Dict(String, String)) {
     )
     |> set.to_list
 
-  nodes |> list.map(count_orbits(_, orbits)) |> int.sum
+  nodes |> list.map(count_orbits(_, orbits, 0)) |> int.sum
 }
 
 pub fn pt_2(orbits: Dict(String, String)) {
@@ -47,10 +47,10 @@ pub fn pt_2(orbits: Dict(String, String)) {
   d - 2
 }
 
-fn count_orbits(node: String, orbits: Dict(String, String)) -> Int {
+fn count_orbits(node: String, orbits: Dict(String, String), acc: Int) -> Int {
   case dict.get(orbits, node) {
-    Error(Nil) -> 0
-    Ok(child) -> 1 + count_orbits(child, orbits)
+    Error(Nil) -> acc
+    Ok(child) -> count_orbits(child, orbits, acc + 1)
   }
 }
 
