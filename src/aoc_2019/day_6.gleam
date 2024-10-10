@@ -5,9 +5,6 @@ import gleam/pair
 import gleam/result
 import gleam/set
 import gleam/string
-import helpers/heap
-
-pub type Node
 
 pub fn parse(input: String) -> Dict(String, String) {
   input
@@ -33,13 +30,21 @@ pub fn pt_1(orbits: Dict(String, String)) {
 }
 
 pub fn pt_2(orbits: Dict(String, String)) {
-  let transfers =
-    dict.fold(orbits, dict.new(), fn(acc, a, b) {
-      acc |> dict.insert(a, b) |> dict.insert(b, a)
+  let san_path = path_to_com("SAN", orbits, 0, dict.new())
+  let you_path = path_to_com("YOU", orbits, 0, dict.new())
+
+  let assert Ok(d) =
+    san_path
+    |> dict.map_values(fn(node, san_d) {
+      you_path
+      |> dict.get(node)
+      |> result.map(fn(you_d) { you_d + san_d })
     })
-  // transfers[from_node].append(to_node)
-  // transfers[to_node].append(from_node)
-  todo as "part 2 not implemented"
+    |> dict.values
+    |> result.values
+    |> list.reduce(int.min)
+
+  d - 2
 }
 
 fn count_orbits(node: String, orbits: Dict(String, String)) -> Int {
@@ -49,27 +54,14 @@ fn count_orbits(node: String, orbits: Dict(String, String)) -> Int {
   }
 }
 
-fn bfs(transfers: Dict(String, List(String))) -> Int {
-  todo
+fn path_to_com(
+  node: String,
+  orbits: Dict(String, String),
+  d: Int,
+  path: Dict(String, Int),
+) -> Dict(String, Int) {
+  case dict.get(orbits, node) {
+    Error(Nil) -> path
+    Ok(child) -> path_to_com(child, orbits, d + 1, path |> dict.insert(node, d))
+  }
 }
-// import collections
-
-// def count_orbits(node, orbits):
-//   if node not in orbits:
-//     return 1
-//   return 1 + sum(count_orbits(child, orbits) for child in orbits[node])
-
-// orbits = collections.defaultdict(list)
-// transfers = collections.defaultdict(list)
-// nodes = set()
-
-// for line in inp.splitlines():
-//   from_node, to_node = line.split(')')
-//   orbits[from_node].append(to_node)
-//   transfers[from_node].append(to_node)
-//   transfers[to_node].append(from_node)
-//   nodes.add(from_node)
-//   nodes.add(to_node)
-
-// answer = sum(count_orbits(node, orbits) for node in nodes) - len(nodes)
-// print(answer)
