@@ -50,7 +50,6 @@ pub fn parse(input: String) -> Computer {
 }
 
 pub fn pt_1(computer: Computer) {
-  // computer |> compute_thruster_output([4, 3, 2, 1, 0])
   list.range(0, 4)
   |> list.permutations()
   |> list.map(compute_thruster_output(_, computer))
@@ -58,12 +57,11 @@ pub fn pt_1(computer: Computer) {
 }
 
 pub fn pt_2(computer: Computer) {
-  // let computer =
-  //   computer
-  //   |> set_input(5)
-  //   |> run
-  // computer.output
-  todo
+  // compute_thruster_output2([9, 8, 7, 6, 5], computer)
+  list.range(5, 9)
+  |> list.permutations()
+  |> list.map(compute_thruster_output2(_, computer))
+  |> list.fold(0, int.max)
 }
 
 fn run_once(computer: Computer) -> Computer {
@@ -77,7 +75,7 @@ fn run_once(computer: Computer) -> Computer {
       case computer.input_values {
         [] -> Computer(..computer, state: WaitingForInput)
         [first, ..rest] ->
-          Computer(..computer, input_values: rest)
+          Computer(..computer, input_values: rest, state: Running)
           |> set_int(p1.i, first)
           |> inc_i(2)
       }
@@ -100,7 +98,12 @@ fn run_once(computer: Computer) -> Computer {
 
 fn run(computer: Computer) -> Computer {
   case computer.state {
-    Running | WaitingForInput -> run(run_once(computer))
+    Running -> run(run_once(computer))
+    WaitingForInput ->
+      case computer.input_values {
+        [] -> computer
+        _ -> run(run_once(computer))
+      }
     Halted -> computer
   }
 }
@@ -197,4 +200,56 @@ fn compute_thruster_output(phases: List(Int), base_computer: Computer) -> Int {
     |> list.last
 
   output
+}
+
+fn compute_thruster_output2(phases: List(Int), base_computer: Computer) -> Int {
+  let amplifiers =
+    phases
+    |> list.map(fn(phase) { Computer(..base_computer, input_values: [phase]) })
+
+  run_amps(amplifiers, [0])
+}
+
+fn run_amps(amplifiers: List(Computer), input_values: List(Int)) -> Int {
+  case input_values {
+    [] -> panic
+    _ -> 0
+  }
+  case is_complete(amplifiers) {
+    True -> {
+      let assert Ok(output) = input_values |> list.last
+      output
+    }
+    False -> {
+      let #(amplifiers, input_values) = run_amps_once(amplifiers, input_values)
+      run_amps(amplifiers, input_values)
+    }
+  }
+}
+
+fn run_amps_once(
+  amplifiers: List(Computer),
+  input_values: List(Int),
+) -> #(List(Computer), List(Int)) {
+  // io.debug(input_values)
+  // io.debug(amplifiers)
+  let #(amplifiers, output_values) =
+    amplifiers
+    |> list.fold(#([], input_values), fn(acc, amplifier) {
+      let #(amplifiers_acc, input_values) = acc
+      // io.debug(#("X", input_values))
+
+      let amplifier = amplifier |> extend_input(input_values) |> run
+      let output_values = amplifier |> get_output_values()
+      #(
+        [Computer(..amplifier, output_values: []), ..amplifiers_acc],
+        output_values,
+      )
+    })
+  #(list.reverse(amplifiers), output_values)
+}
+
+fn is_complete(amplifiers: List(Computer)) -> Bool {
+  let assert Ok(last_amp) = list.last(amplifiers)
+  last_amp.state == Halted
 }
