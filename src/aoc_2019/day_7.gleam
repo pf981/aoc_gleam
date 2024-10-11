@@ -1,7 +1,6 @@
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/string
 
@@ -57,7 +56,6 @@ pub fn pt_1(computer: Computer) {
 }
 
 pub fn pt_2(computer: Computer) {
-  // compute_thruster_output2([9, 8, 7, 6, 5], computer)
   list.range(5, 9)
   |> list.permutations()
   |> list.map(compute_thruster_output2(_, computer))
@@ -65,8 +63,6 @@ pub fn pt_2(computer: Computer) {
 }
 
 fn run_once(computer: Computer) -> Computer {
-  use <- bool.guard(computer.state == Halted, computer)
-
   let #(opcode, #(p1, p2, p3)) = get_op(computer)
   case opcode {
     Add -> computer |> set_int(p3.i, p1.val + p2.val) |> inc_i(4)
@@ -231,14 +227,10 @@ fn run_amps_once(
   amplifiers: List(Computer),
   input_values: List(Int),
 ) -> #(List(Computer), List(Int)) {
-  // io.debug(input_values)
-  // io.debug(amplifiers)
   let #(amplifiers, output_values) =
     amplifiers
     |> list.fold(#([], input_values), fn(acc, amplifier) {
       let #(amplifiers_acc, input_values) = acc
-      // io.debug(#("X", input_values))
-
       let amplifier = amplifier |> extend_input(input_values) |> run
       let output_values = amplifier |> get_output_values()
       #(
