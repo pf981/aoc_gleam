@@ -29,22 +29,24 @@ pub fn pt_1(dimensions: List(Dimension)) -> Int {
   dimensions
   |> simulate_n(1000)
   |> list.transpose
-  |> list.map(list.fold(
-    _,
-    Vector(0, 0),
-    fn(acc, dimension: Vector) {
-      Vector(
-        acc.pos + int.absolute_value(dimension.pos),
-        acc.vel + int.absolute_value(dimension.vel),
-      )
-    },
-  ))
-  |> list.map(fn(dimension) { dimension.pos * dimension.vel })
+  |> list.map(calculate_energy)
   |> list.fold(0, fn(acc, energy) { acc + energy })
 }
 
 pub fn pt_2(dimensions: List(Dimension)) -> Int {
   dimensions |> list.map(find_cycle(_, set.new(), 0)) |> list.fold(1, lcm)
+}
+
+fn calculate_energy(moon: Dimension) -> Int {
+  let Vector(potential_energy, kinetic_energy) =
+    moon
+    |> list.fold(Vector(0, 0), fn(acc, dimension: Vector) {
+      Vector(
+        acc.pos + int.absolute_value(dimension.pos),
+        acc.vel + int.absolute_value(dimension.vel),
+      )
+    })
+  potential_energy * kinetic_energy
 }
 
 fn simulate_n(dimensions: List(Dimension), n: Int) -> List(Dimension) {
