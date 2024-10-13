@@ -50,10 +50,10 @@ fn calculate_energy(moon: Dimension) -> Int {
 }
 
 fn simulate_n(dimensions: List(Dimension), n: Int) -> List(Dimension) {
-  case n {
-    0 -> dimensions
-    _ if n < 0 -> panic
-    _ -> dimensions |> list.map(simulate_dimension) |> simulate_n(n - 1)
+  case int.compare(n, 0) {
+    Eq -> dimensions
+    Gt -> dimensions |> list.map(simulate_dimension) |> simulate_n(n - 1)
+    Lt -> panic
   }
 }
 
