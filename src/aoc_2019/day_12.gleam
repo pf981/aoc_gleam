@@ -1,10 +1,9 @@
 import gleam/int
-import gleam/io
 import gleam/list
-import gleam/order
+import gleam/order.{Eq, Gt, Lt}
 import gleam/regex
 import gleam/result
-import gleam/string
+import gleam/set.{type Set}
 
 pub type Vector {
   Vector(pos: Int, vel: Int)
@@ -44,18 +43,19 @@ pub fn pt_1(dimensions: List(Dimension)) -> Int {
   |> list.fold(0, fn(acc, energy) { acc + energy })
 }
 
-pub fn pt_2(dimensions: List(Dimension)) {
-  todo as "part 2 not implemented"
+pub fn pt_2(dimensions: List(Dimension)) -> Int {
+  dimensions |> list.map(find_cycle(_, set.new(), 0)) |> list.fold(1, lcm)
 }
 
-pub fn simulate_n(dimensions: List(Dimension), n: Int) -> List(Dimension) {
+fn simulate_n(dimensions: List(Dimension), n: Int) -> List(Dimension) {
   case n {
     0 -> dimensions
+    _ if n < 0 -> panic
     _ -> dimensions |> list.map(simulate_dimension) |> simulate_n(n - 1)
   }
 }
 
-pub fn simulate_dimension(dimension: Dimension) -> Dimension {
+fn simulate_dimension(dimension: Dimension) -> Dimension {
   // Update velocities
   let dimension =
     dimension
@@ -64,9 +64,9 @@ pub fn simulate_dimension(dimension: Dimension) -> Dimension {
         dimension
         |> list.fold(0, fn(acc, other) {
           case int.compare(vector.pos, other.pos) {
-            order.Eq -> acc
-            order.Lt -> acc + 1
-            order.Gt -> acc - 1
+            Eq -> acc
+            Gt -> acc - 1
+            Lt -> acc + 1
           }
         })
 
@@ -76,4 +76,25 @@ pub fn simulate_dimension(dimension: Dimension) -> Dimension {
   // Update positions
   dimension
   |> list.map(fn(vector) { Vector(vector.pos + vector.vel, vector.vel) })
+}
+
+fn find_cycle(dimension: Dimension, seen: Set(Dimension), acc: Int) -> Int {
+  case set.contains(seen, dimension) {
+    True -> acc
+    False ->
+      dimension
+      |> simulate_dimension
+      |> find_cycle(set.insert(seen, dimension), acc + 1)
+  }
+}
+
+fn gcd(a: Int, b: Int) -> Int {
+  case b {
+    0 -> a
+    _ -> gcd(b, a % b)
+  }
+}
+
+fn lcm(a: Int, b: Int) -> Int {
+  a * b / gcd(a, b)
 }
